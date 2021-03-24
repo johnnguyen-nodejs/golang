@@ -5,6 +5,7 @@ import (
 	"log"
 	"context"
 	"github.com/johnnguyen-nodejs/golang/handlers"
+	"github.com/gorilla/mux"
 	"github.com/nicholasjackson/env"
 	"os"
 	"os/signal"
@@ -18,8 +19,19 @@ func main() {
 	// Create the handlers
 	ph := handlers.NewProducts(l)
 	// Create a new serve mux and register the handlers
-	sm := http.NewServeMux()
-	sm.Handle("/", ph)
+	sm := mux.NewRouter()
+	// get router
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/", ph.GetProducts)
+	// put router
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/{id:[0-9]+}", ph.UpdateProducts)
+	putRouter.Use(ph.MiddlewareProductvalidation)
+	// post router
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/", ph.AddProduct)
+	postRouter.Use(ph.MiddlewareProductvalidation)
+
 	// Create a new server
 	s := &http.Server{
 		Addr: ":9090",
